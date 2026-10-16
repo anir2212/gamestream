@@ -1,0 +1,44 @@
+version: 2
+models:
+  - name: dim_games
+    columns:
+      - name: game_id
+        tests: [unique, not_null]
+      - name: genre
+        tests: [not_null]
+  - name: active_users
+    columns:
+      - name: day
+        tests: [unique, not_null]
+  - name: retention_cohorts
+    columns:
+      - name: cohort_date
+        tests: [unique, not_null]
+  - name: purchase_funnel
+    columns:
+      - name: day
+        tests: [unique, not_null]
+  - name: revenue_by_game
+    columns:
+      - name: game_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_games')
+                field: game_id
+  - name: game_popularity
+    columns:
+      - name: game_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_games')
+                field: game_id
+  - name: review_sentiment
+    columns:
+      - name: game_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_games')
+                field: game_id
