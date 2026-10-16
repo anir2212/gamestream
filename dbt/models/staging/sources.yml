@@ -1,0 +1,29 @@
+version: 2
+sources:
+  - name: silver
+    database: lake
+    schema: silver
+    tables:
+      - name: events
+        columns:
+          - name: event_id
+            tests: [unique, not_null]
+          - name: user_id
+            tests: [not_null]
+          - name: game_id
+            tests: [not_null]
+          - name: event_ts
+            tests: [not_null]
+          - name: event_type
+            tests:
+              - accepted_values:
+                  arguments:
+                    values:
+                      - session_start
+                      - page_view
+                      - search
+                      - add_to_wishlist
+                      - purchase
+                      - play_start
+                      - play_end
+                      - review_posted

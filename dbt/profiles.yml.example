@@ -1,0 +1,13 @@
+gamestream:
+  target: local
+  outputs:
+    local:
+      type: trino
+      method: none
+      user: gamestream
+      host: "{{ env_var('GAMESTREAM_TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('GAMESTREAM_TRINO_PORT', '18082') | int }}"
+      database: lake
+      schema: gold
+      threads: 2
+      http_scheme: http

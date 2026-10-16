@@ -1,0 +1,15 @@
+{
+  "type": "record", "name": "GameEvent", "namespace": "gamestream",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "user_id", "type": "string"},
+    {"name": "game_id", "type": "string"},
+    {"name": "event_type", "type": "string"},
+    {"name": "event_ts", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "ingest_ts", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "schema_version", "type": "int"},
+    {"name": "genre", "type": "string"},
+    {"name": "amount_cents", "type": ["null", "int"], "default": null},
+    {"name": "review_positive", "type": ["null", "boolean"], "default": null}
+  ]
+}

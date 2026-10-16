@@ -1,0 +1,10 @@
+{
+  "workload": "synthetic generation in memory, no Kafka or serialization",
+  "unique_events": 50000,
+  "delivered_rows_with_intentional_duplicates": 51000,
+  "seconds": 0.1709,
+  "rows_per_second": 298463.6,
+  "machine": "arm64",
+  "platform": "macOS-15.3.1-arm64-arm-64bit",
+  "python": "3.12.13"
+}
