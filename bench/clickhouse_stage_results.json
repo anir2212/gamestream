@@ -1,0 +1,19 @@
+{
+  "observed_at_utc": "2026-10-18T17:25:12.324183+00:00",
+  "status": "passed",
+  "expected_unique": 1000,
+  "events_final": {
+    "event_rows": 1000,
+    "unique_event_ids": 1000,
+    "schema_v1_rows": 500,
+    "schema_v2_rows": 500,
+    "v1_with_device": 0,
+    "purchase_rows": 34
+  },
+  "minute_aggregates": {
+    "minute_game_buckets": 986,
+    "unique_events": 1000,
+    "unique_purchases": 34
+  },
+  "scope": "one local ClickHouse serving stage; no Iceberg parity or fault-tolerance claim"
+}
