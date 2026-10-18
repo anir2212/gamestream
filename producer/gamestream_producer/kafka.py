@@ -28,7 +28,11 @@ def publish(
     client = SchemaRegistryClient({"url": registry_url})
     client.set_compatibility(subject_name=f"{topic}-value", level="BACKWARD")
     serializers = {
-        version: AvroSerializer(client, (SCHEMA_DIR / f"event_v{version}.avsc").read_text())
+        version: AvroSerializer(
+            client,
+            (SCHEMA_DIR / f"event_v{version}.avsc").read_text(),
+            conf={"subject.name.strategy.type": "TOPIC"},
+        )
         for version in (1, 2)
     }
     producer = Producer({

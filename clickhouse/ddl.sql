@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS gamestream.events_kafka (
   kafka_group_name = 'gamestream-clickhouse',
   kafka_format = 'AvroConfluent',
   format_avro_schema_registry_url = 'http://registry:8080/apis/ccompat/v7',
+  -- V1 has no device_type; ClickHouse fills the Nullable column with NULL.
+  input_format_avro_allow_missing_fields = 1,
   kafka_num_consumers = 3;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS gamestream.events_mv
