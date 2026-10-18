@@ -21,7 +21,7 @@ def run_backfill(**context):
         [
             "spark-submit", "--master", "spark://spark-master:7077",
             "--packages", "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.10.0,"
-            "org.apache.hadoop:hadoop-aws:3.3.4",
+            "org.apache.hadoop:hadoop-aws:3.3.4,org.postgresql:postgresql:42.7.7",
             "/opt/gamestream/spark/backfill.py", start.isoformat(), end.isoformat(),
         ],
         cwd="/opt/gamestream",

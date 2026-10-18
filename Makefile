@@ -1,8 +1,9 @@
-.PHONY: install test lint up-small up-full down-small down-full topic-small topic-full smoke producer-bench up down lakehouse-init bronze silver demo
+.PHONY: install test lint up-small up-full up-core down-small down-full topic-small topic-full smoke producer-bench up down lakehouse-init catalog-smoke bronze silver verify-lake demo
 
 COMPOSE = docker compose -p gamestream-full -f compose/compose.yaml --profile full --profile lakehouse
-SPARK_PACKAGES = org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.10.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.7,org.apache.hadoop:hadoop-aws:3.3.4
+SPARK_PACKAGES = org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.10.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.7,org.apache.hadoop:hadoop-aws:3.3.4,org.postgresql:postgresql:42.7.7
 SPARK_IVY = --conf spark.jars.ivy=/tmp/ivy
+SPARK_STREAM_CORES = --conf spark.cores.max=1
 
 install:
 	uv sync --extra test --extra spark --extra analytics
@@ -16,6 +17,9 @@ lint:
 up:
 	GAMESTREAM_VOTERS='1@broker1:9093,2@broker2:9093,3@broker3:9093' GAMESTREAM_RF=3 GAMESTREAM_MIN_ISR=2 $(COMPOSE) up -d --build
 
+up-core:
+	GAMESTREAM_VOTERS='1@broker1:9093,2@broker2:9093,3@broker3:9093' GAMESTREAM_RF=3 GAMESTREAM_MIN_ISR=2 $(COMPOSE) up -d --build broker1 broker2 broker3 registry minio metastore-db spark-master spark-worker
+
 down:
 	$(COMPOSE) down
 
@@ -23,11 +27,17 @@ lakehouse-init:
 	$(COMPOSE) run --rm minio-init
 	$(COMPOSE) exec broker1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker1:9092 --create --if-not-exists --topic game_events --partitions 6 --replication-factor 3 --config min.insync.replicas=2
 
+catalog-smoke:
+	$(COMPOSE) exec spark-master /opt/spark/bin/spark-submit --master local[1] $(SPARK_IVY) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/catalog_smoke.py
+
 bronze:
-	$(COMPOSE) exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 $(SPARK_IVY) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/stream_bronze.py
+	$(COMPOSE) exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 $(SPARK_IVY) $(SPARK_STREAM_CORES) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/stream_bronze.py
 
 silver:
-	$(COMPOSE) exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 $(SPARK_IVY) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/stream_silver.py
+	$(COMPOSE) exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 $(SPARK_IVY) $(SPARK_STREAM_CORES) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/stream_silver.py
+
+verify-lake:
+	$(COMPOSE) exec spark-master /opt/spark/bin/spark-submit --master local[1] $(SPARK_IVY) --packages $(SPARK_PACKAGES) /opt/gamestream/spark/verify_lake.py
 
 demo:
 	$(MAKE) up

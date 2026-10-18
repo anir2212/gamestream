@@ -61,7 +61,29 @@ services:
     image: apicurio/apicurio-registry:3.3.3
     profiles: [small, full]
     hostname: registry
+    environment:
+      APICURIO_STORAGE_KIND: sql
+      APICURIO_STORAGE_SQL_KIND: postgresql
+      APICURIO_DATASOURCE_URL: jdbc:postgresql://registry-db:5432/registry
+      APICURIO_DATASOURCE_USERNAME: registry
+      APICURIO_DATASOURCE_PASSWORD: local-demo-only
+    depends_on:
+      registry-db: {condition: service_healthy}
     ports: ["127.0.0.1:18081:8080"]
+    networks: [game]
+
+  registry-db:
+    image: postgres:16-alpine
+    profiles: [small, full]
+    environment:
+      POSTGRES_USER: registry
+      POSTGRES_PASSWORD: local-demo-only
+      POSTGRES_DB: registry
+    volumes: [registry_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registry -d registry"]
+      interval: 5s
+      retries: 20
     networks: [game]
 
   minio:
@@ -101,7 +123,7 @@ services:
   metastore:
     build:
       context: ./hive
-    profiles: [lakehouse]
+    profiles: [legacy-hive]
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: postgres
@@ -147,7 +169,9 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:local-demo-only@airflow-db:5432/airflow
       AIRFLOW__WEBSERVER__SECRET_KEY: gamestream-local-demo-only
       GAMESTREAM_HOME: /opt/gamestream
-      GAMESTREAM_HIVE_URI: thrift://metastore:9083
+      GAMESTREAM_CATALOG_URI: jdbc:postgresql://metastore-db:5432/metastore
+      GAMESTREAM_CATALOG_USER: hive
+      GAMESTREAM_CATALOG_PASSWORD: local-demo-only
       GAMESTREAM_S3_ENDPOINT: http://minio:9000
       GAMESTREAM_BROKERS: broker1:9092
       GAMESTREAM_REGISTRY: http://registry:8080/apis/ccompat/v7
@@ -219,7 +243,9 @@ services:
       - ./trino/node.properties:/etc/trino/node.properties:ro
       - ./trino/catalog:/etc/trino/catalog:ro
     ports: ["127.0.0.1:18082:8080"]
-    depends_on: [metastore, minio]
+    depends_on:
+      metastore-db: {condition: service_healthy}
+      minio: {condition: service_started}
     networks: [game]
 
   clickhouse:
@@ -258,6 +284,7 @@ volumes:
   broker1_data: {}
   broker2_data: {}
   broker3_data: {}
+  registry_data: {}
   minio_data: {}
   metastore_data: {}
   clickhouse_data: {}
