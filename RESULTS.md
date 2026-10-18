@@ -1,10 +1,20 @@
 # GameStream measured results
 
+## 2026-10-18 Trino, dbt, and silver quality stage
+
+With 11.67 GiB of Docker VM RAM and approximately 17 GiB host disk free before the core stack started, the saved Spark/Iceberg tables read back **2,142 bronze rows** and **1,003 silver rows with 1,003 distinct event IDs**. The cached Spark image lacked the newer `spark/verify_lake.py`; the script was copied into the running container for this read-only check. The image still needs rebuilding before `make verify-lake` works in a fresh container.
+
+Trino 483 initially rejected `node.environment=gamestream-local`; the mounted setting is now `gamestream_local`. After restarting, Trino's Iceberg JDBC catalog showed the bronze and silver schemas, and Trino independently returned the same **2,142 / 1,003 / 1,003** counts. This verifies cross-engine access to these committed tables, not ongoing stream freshness.
+
+With Kafka and Spark stopped to release memory, `dbt build --profiles-dir . --no-partial-parse --threads 1` against Trino completed **31/31 nodes**: one staging view, seven gold tables, and 23 data tests. Trino read back 1 active-user row, 40 game dimensions, 40 popularity rows, 1 funnel row, 1 retention row, 23 revenue rows, and 27 review rows. The live `dq.run_checks` gate returned 1,003 rows and zero missing IDs, duplicate IDs, invalid event types, or future events. The compact record is [`bench/trino_dbt_stage_results.json`](bench/trino_dbt_stage_results.json).
+
+This is one staged run on saved synthetic data. Host free disk reached about **9.3 GiB** after pulling Trino, so ClickHouse, Airflow, and Superset were not started. No live Airflow schedule, ClickHouse ingestion, dashboard, full `make demo` run, query latency comparison, or production fault-tolerance claim follows from this check.
+
 ## Backfill boundary regression, 18 October 2026
 
 The manual backfill now treats its limit as **31 inclusive event dates**. A fake-Spark regression test verifies that the operator scans all bronze arrival dates before filtering decoded `event_ts`, so a very late event is not excluded solely because its Kafka arrival date is after the requested range. It also verifies that Spark stops after a merge failure. This is a code-path test only: no Airflow DAG, Iceberg backfill, target-side replay, or post-commit restart was run. Scanning all bronze partitions can be expensive at larger scale; a safe arrival-date cutoff would require a proven maximum lateness policy.
 
-`bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record the Kafka and Spark checks that have actually run; Trino, ClickHouse, and the complete dashboard stack remain open.
+`bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record Kafka and Spark checks; the later Trino/dbt result is above. ClickHouse and the complete dashboard stack remain open.
 
 | Machine | Unique events | Rows including intentional duplicates | Wall time | Rows/s |
 |---|---:|---:|---:|---:|
@@ -56,8 +66,8 @@ The compact record is [`bench/lakehouse_stage_results.json`](bench/lakehouse_sta
 
 ## Model and quality checks
 
-`dbt parse --profiles-dir . --no-partial-parse` registered the Trino adapter and found eight models, 23 data tests, and one source after adding accepted-value, composite-grain, and count-order checks on 2026-10-15. Parsing had no model errors. `dbt compile` attempted a Trino connection and could not proceed because the full stack is not running; no SQL execution or dbt build result is claimed. The pure quality gate passed six local tests, including five deliberately invalid metric variants. The full Airflow DAG import, DQ query, and dashboard remain unverified.
+`dbt parse --profiles-dir . --no-partial-parse` registered the Trino adapter and found eight models, 23 data tests, and one source after adding accepted-value, composite-grain, and count-order checks on 2026-10-15. Parsing had no model errors. At that checkpoint, `dbt compile` could not connect because Trino was not running. The pure quality gate passed six local tests, including five deliberately invalid metric variants. The later live dbt build and DQ query are recorded above; the Airflow DAG run and dashboard remain unverified.
 
 ## Resource boundary
 
-At initial implementation the host had about 3.9 GiB free disk and Docker was configured with 8.32 billion bytes (about 7.75 GiB) of memory. On 2026-10-15, `df -h` showed about 45 GiB free on the host. After the user changed Docker Desktop settings, `docker info` reported 12,528,242,688 bytes (about 11.67 GiB) available to the VM. On 2026-10-16, the first staged Docker run consumed roughly 17–18 GiB of host free space, including image pulls, build cache, and volumes. The later JDBC/stream stage ran with about 20 GiB free at the start, 10 GiB at its low point, and 15 GiB after shutdown. The `Docker.raw` sparse file reported a 460 GiB logical size, so host free space was the practical limit. Query latency, Iceberg compaction, time travel, dashboard refresh, and silver post-commit stream restart are **unmeasured**.
+At initial implementation the host had about 3.9 GiB free disk and Docker was configured with 8.32 billion bytes (about 7.75 GiB) of memory. On 2026-10-15, `df -h` showed about 45 GiB free on the host. After the user changed Docker Desktop settings, `docker info` reported 12,528,242,688 bytes (about 11.67 GiB) available to the VM. On 2026-10-16, the first staged Docker run consumed roughly 17–18 GiB of host free space, including image pulls, build cache, and volumes. The later JDBC/stream stage ran with about 20 GiB free at the start, 10 GiB at its low point, and 15 GiB after shutdown. The 2026-10-18 Trino/dbt stage reached about 9.3 GiB free and therefore did not expand the stack further. The `Docker.raw` sparse file reported a 460 GiB logical size, so host free space was the practical limit. Query latency, Iceberg compaction, time travel, dashboard refresh, and silver post-commit stream restart are **unmeasured**.
