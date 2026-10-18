@@ -1,5 +1,13 @@
 # GameStream measured results
 
+## 2026-10-18 manual backfill and mart refresh
+
+With the saved **2,142-row bronze** table and **1,003-row silver** table, the current `spark/backfill.py` was submitted manually for **2026-01-01** using a local Spark driver. It scanned the bronze table across arrival dates, decoded the Avro frames through the persisted registry, selected the requested event date, and merged by `event_id` into Iceberg silver. The first run added **97 rows**, bringing silver to **1,100**. Repeating the same date added **zero** rows; the second MERGE still committed a metadata-only Iceberg snapshot. Spark readback then showed **2,142 bronze / 1,100 silver / 1,100 distinct IDs**.
+
+After stopping Kafka and Spark to free memory, Trino's silver quality gate reported **1,100 rows** with zero missing IDs, duplicate IDs, invalid types, or future events. A fresh dbt build passed **31/31 nodes**: eight models and 23 data tests. Trino read back the seven gold tables: active users **1**, game dimensions **40**, popularity **40**, funnel **1**, retention **1**, revenue **24**, and review sentiment **29** rows. The compact record is [`bench/backfill_stage_results.json`](bench/backfill_stage_results.json).
+
+This verifies one manual backfill, same-date target row idempotence, DQ and mart refresh on a saved synthetic fixture. It does **not** verify the Airflow backfill DAG, a streaming-query kill/restart after an Iceberg commit, ClickHouse serving, or performance at scale. The cached Spark image lacked the current verifier; the current backfill and verifier scripts were copied into that test container. A fresh image still needs a rebuild. No new images were pulled in this stage; free host disk reached approximately **11 GiB** while Docker was running.
+
 ## 2026-10-18 Trino, dbt, and silver quality stage
 
 With 11.67 GiB of Docker VM RAM and approximately 17 GiB host disk free before the core stack started, the saved Spark/Iceberg tables read back **2,142 bronze rows** and **1,003 silver rows with 1,003 distinct event IDs**. The cached Spark image lacked the newer `spark/verify_lake.py`; the script was copied into the running container for this read-only check. The image still needs rebuilding before `make verify-lake` works in a fresh container.
@@ -12,7 +20,7 @@ This is one staged run on saved synthetic data. Host free disk reached about **9
 
 ## Backfill boundary regression, 18 October 2026
 
-The manual backfill now treats its limit as **31 inclusive event dates**. A fake-Spark regression test verifies that the operator scans all bronze arrival dates before filtering decoded `event_ts`, so a very late event is not excluded solely because its Kafka arrival date is after the requested range. It also verifies that Spark stops after a merge failure. This is a code-path test only: no Airflow DAG, Iceberg backfill, target-side replay, or post-commit restart was run. Scanning all bronze partitions can be expensive at larger scale; a safe arrival-date cutoff would require a proven maximum lateness policy.
+The manual backfill now treats its limit as **31 inclusive event dates**. A fake-Spark regression test verifies that the operator scans all bronze arrival dates before filtering decoded `event_ts`, so a very late event is not excluded solely because its Kafka arrival date is after the requested range. It also verifies that Spark stops after a merge failure. At this earlier checkpoint, no live backfill had run; the later manual Iceberg result is above. Scanning all bronze partitions can be expensive at larger scale; a safe arrival-date cutoff would require a proven maximum lateness policy.
 
 `bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record Kafka and Spark checks; the later Trino/dbt result is above. ClickHouse and the complete dashboard stack remain open.
 

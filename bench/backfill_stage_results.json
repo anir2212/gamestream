@@ -1,0 +1,57 @@
+{
+  "date_sgt": "2026-10-18",
+  "scope": "manual one-day Spark backfill against saved local synthetic Iceberg data, target replay, Trino quality gate, and dbt rebuild",
+  "source": "existing bronze Iceberg table populated from synthetic Kafka events; no new producer run in this stage",
+  "event_date_range_inclusive": ["2026-01-01", "2026-01-01"],
+  "before": {
+    "bronze_rows": 2142,
+    "silver_rows": 1003,
+    "silver_distinct_event_ids": 1003
+  },
+  "after_first_backfill": {
+    "silver_rows": 1100,
+    "new_silver_rows": 97
+  },
+  "after_same_day_replay": {
+    "bronze_rows": 2142,
+    "silver_rows": 1100,
+    "silver_distinct_event_ids": 1100,
+    "additional_silver_rows": 0,
+    "note": "The second MERGE wrote an Iceberg metadata snapshot without adding data records."
+  },
+  "silver_quality_gate": {
+    "rows": 1100,
+    "missing_ids": 0,
+    "duplicate_ids": 0,
+    "invalid_types": 0,
+    "future_events": 0
+  },
+  "dbt_rebuild": {
+    "models": 8,
+    "data_tests": 23,
+    "pass": 31,
+    "warn": 0,
+    "error": 0,
+    "gold_row_counts": {
+      "active_users": 1,
+      "dim_games": 40,
+      "game_popularity": 40,
+      "purchase_funnel": 1,
+      "retention_cohorts": 1,
+      "revenue_by_game": 24,
+      "review_sentiment": 29
+    }
+  },
+  "resource_boundary": {
+    "docker_memory_bytes": 12528242688,
+    "minimum_observed_host_free_gib_approx": 11,
+    "new_images_pulled": false
+  },
+  "limitations": [
+    "The backfill was manually submitted from the cached Spark container; the Airflow DAG was not run.",
+    "The backfill/replay reused one saved synthetic dataset, not independent late-arrival fixtures or a production stream.",
+    "The second MERGE preserved row counts but still committed a metadata-only Iceberg snapshot.",
+    "The cached Spark image lacked the current verifier; the current backfill and verifier scripts were copied into this test container, so a fresh-image run still needs a rebuild.",
+    "Streaming silver restart after a successful commit and ClickHouse/Airflow/Superset integration remain unverified."
+  ]
+}
