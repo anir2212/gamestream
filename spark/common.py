@@ -39,8 +39,15 @@ def spark_session(name: str):
         .config("spark.sql.extensions",
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
         .config("spark.sql.catalog.lake", "org.apache.iceberg.spark.SparkCatalog")
-        .config("spark.sql.catalog.lake.type", "hive")
-        .config("spark.sql.catalog.lake.uri", os.getenv("GAMESTREAM_HIVE_URI", "thrift://metastore:9083"))
+        .config("spark.sql.catalog.lake.type", "jdbc")
+        .config("spark.sql.catalog.lake.uri", os.getenv(
+            "GAMESTREAM_CATALOG_URI", "jdbc:postgresql://metastore-db:5432/metastore"
+        ))
+        .config("spark.sql.catalog.lake.jdbc.user", os.getenv("GAMESTREAM_CATALOG_USER", "hive"))
+        .config("spark.sql.catalog.lake.jdbc.password", os.getenv(
+            "GAMESTREAM_CATALOG_PASSWORD", "local-demo-only"
+        ))
+        .config("spark.sql.catalog.lake.jdbc.schema-version", "V1")
         .config("spark.sql.catalog.lake.warehouse", os.getenv("GAMESTREAM_WAREHOUSE", "s3a://warehouse/"))
         .config("spark.hadoop.fs.s3a.endpoint", os.getenv("GAMESTREAM_S3_ENDPOINT", "http://minio:9000"))
         .config("spark.hadoop.fs.s3a.path.style.access", "true")

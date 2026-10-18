@@ -1,0 +1,30 @@
+{
+  "date_sgt": "2026-10-16",
+  "environment": {
+    "docker_vm_memory_bytes": 12528242688,
+    "host_free_gib_before": 20,
+    "host_free_gib_low": 10,
+    "host_free_gib_after_docker_stop": 15
+  },
+  "catalog_smoke": {
+    "catalog": "Iceberg JDBC V1 in PostgreSQL 16",
+    "warehouse": "MinIO",
+    "isolated_table_rows_written_and_read": 1,
+    "table_dropped_after_check": true
+  },
+  "initial_stream_snapshot": {
+    "bronze_rows": 2040,
+    "silver_rows": 1000,
+    "silver_distinct_event_ids": 1000
+  },
+  "registry_restart": {
+    "storage": "PostgreSQL 16",
+    "schema_ids_and_content_survived": [1, 2],
+    "new_synthetic_deliveries_acknowledged": 102,
+    "bronze_rows_after": 2142,
+    "silver_rows_after": 1003,
+    "silver_distinct_event_ids_after": 1003,
+    "explanation": "The new seed reused January 1 event timestamps after a full day had advanced the silver watermark. Most of the 100 new IDs were older than the 45-minute watermark and were intentionally dropped."
+  },
+  "scope": "One staged local run; Trino, ClickHouse, Airflow, Superset, dbt build, and silver post-commit restart were not exercised."
+}
