@@ -15,7 +15,7 @@ def run_backfill(**context):
     params = context["params"]
     start = date.fromisoformat(params["start_date"])
     end = date.fromisoformat(params["end_date"])
-    if start > end or (end - start).days > 31:
+    if start > end or (end - start).days >= 31:
         raise ValueError("Backfill requires an ascending range of at most 31 days")
     subprocess.run(
         [

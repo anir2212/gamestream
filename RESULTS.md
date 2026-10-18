@@ -1,5 +1,9 @@
 # GameStream measured results
 
+## Backfill boundary regression, 18 October 2026
+
+The manual backfill now treats its limit as **31 inclusive event dates**. A fake-Spark regression test verifies that the operator scans all bronze arrival dates before filtering decoded `event_ts`, so a very late event is not excluded solely because its Kafka arrival date is after the requested range. It also verifies that Spark stops after a merge failure. This is a code-path test only: no Airflow DAG, Iceberg backfill, target-side replay, or post-commit restart was run. Scanning all bronze partitions can be expensive at larger scale; a safe arrival-date cutoff would require a proven maximum lateness policy.
+
 `bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record the Kafka and Spark checks that have actually run; Trino, ClickHouse, and the complete dashboard stack remain open.
 
 | Machine | Unique events | Rows including intentional duplicates | Wall time | Rows/s |

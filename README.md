@@ -37,6 +37,8 @@ make down
 
 The streams start in the background; wait for their first commits before running `make verify-lake`. Keep the Kafka and registry volumes together when resuming a retained topic. The larger `make up` profile defines analytics and UI services but is not a verified one-command demo yet.
 
+The manual backfill is limited to 31 inclusive event dates. It scans bronze across arrival dates before selecting decoded event dates, so a record that arrived much later is still eligible for recovery. That choice is safer for this small lab but would require an indexing or lateness policy at larger scale. Local tests cover the date bound, selection logic, and Spark cleanup after failure; a live Iceberg backfill and Airflow run remain open.
+
 ## Read the implementation
 
 The [data model](docs/DATA_MODEL.md) describes bronze, silver, and proposed marts. [Distributed-systems notes](docs/DISTRIBUTED_SYSTEMS.md) cover broker failure, replay, watermarks, and remaining fault tests. [The staged result record](bench/lakehouse_stage_results.json) has the exact catalog and row-count observations. Spark jobs live in `spark/`; the producer and schemas are in `producer/`; `dbt/`, `clickhouse/`, and `airflow/` contain the downstream work awaiting full-stack checks.
