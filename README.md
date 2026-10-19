@@ -4,6 +4,19 @@ GameStream is a local pipeline for game telemetry. A producer writes versioned A
 
 I built this as a fault-aware lab rather than a production service. The events are generated, and each measured stage is recorded in [RESULTS.md](RESULTS.md).
 
+## Milestones
+
+| Plan milestone | Where it stands |
+|---|---|
+| M1–M2: infrastructure and producer | Services were started in stages; the small Kafka/Avro smoke round-tripped 1,020 deliveries from 1,000 event IDs. The full stack has not run together. |
+| M3: bronze to silver | A live Iceberg stage kept 2,142 bronze deliveries. Manual backfill raised silver to 1,100 unique IDs; same-date replay added no data rows. Post-commit stream restart remains untested. |
+| M4: dbt marts | Trino read the Iceberg tables and dbt built eight models with 23 passing data tests. |
+| M5: serving and dashboards | ClickHouse served a separate 1,000-ID fixture with matching minute aggregates. Superset dashboard operation and fair Trino/ClickHouse timing remain open. |
+| M6–M7: orchestration and failure checks | The live silver quality gate passed and one three-broker fault experiment read back 200 acknowledged IDs. Airflow DAG execution and broader recovery tests remain open. |
+| M8–M9: stretch | Flink and managed-platform ports are not verified. |
+
+The next integration step is to feed the *same event IDs* to Iceberg and ClickHouse, then check equal query answers before timing either engine. Airflow and Superset need separate live checks. The current measurements come from staged synthetic runs.
+
 ## What has run
 
 - A one-broker smoke round-tripped 1,020 Avro deliveries using both schema versions.
