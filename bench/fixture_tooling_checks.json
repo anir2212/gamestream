@@ -1,0 +1,51 @@
+{
+  "date_sgt": "2026-10-20",
+  "scope": "Local tests and static checks only. No Docker, Kafka, Spark streaming, Iceberg, Trino, ClickHouse, Airflow or Superset service ran.",
+  "environment": {
+    "platform": "macOS-15.3.1-arm64",
+    "python": "3.12.13",
+    "pyspark": "3.5.7",
+    "java": "OpenJDK 17.0.14 (Zulu)",
+    "host_free_gib_at_start": 10,
+    "host_free_gib_at_dbt_parse": 4.9,
+    "host_free_gib_after_final_tests": 3.7,
+    "disk_note": "Free space fell because other agents shared the host; this run wrote under 1 MB of tracked files.",
+    "docker_used": false
+  },
+  "pytest": {
+    "command": "uv run --extra test --extra spark pytest -q",
+    "before_changes": {"passed": 21, "failed": 0, "skipped": 0},
+    "after_changes": {"passed": 49, "failed": 0, "skipped": 0},
+    "after_by_file": {
+      "tests/test_avro_decode.py": 3,
+      "tests/test_backfill.py": 4,
+      "tests/test_dq.py": 6,
+      "tests/test_fixture.py": 14,
+      "tests/test_generator.py": 3,
+      "tests/test_query_bench.py": 13,
+      "tests/test_spark_transforms.py": 2,
+      "tests/test_stream_silver.py": 4
+    }
+  },
+  "ruff": {"command": "uv run --extra test ruff check producer scripts bench spark dq airflow tests", "result": "All checks passed"},
+  "dbt_parse": {
+    "command": "DO_NOT_TRACK=1 DBT_SEND_ANONYMOUS_USAGE_STATS=false ../.venv/bin/dbt parse --profiles-dir . --no-partial-parse",
+    "dbt_core": "1.11.15",
+    "adapter": "trino 1.9.3",
+    "models": 8,
+    "data_tests": 23,
+    "sources": 1,
+    "note": "Parse builds the graph only; no SQL ran against Trino."
+  },
+  "parity_fixture": {
+    "manifest": "data/fixtures/parity-v1/manifest.json",
+    "fixture_version": "parity-v1",
+    "seed": 20261020,
+    "start_utc": "2026-02-01T00:00:00Z",
+    "deliveries": 1020,
+    "unique_event_ids": 1000,
+    "event_ids_sha256": "e53ae7eb1e4fef0b41b34a0c32802e0a68166acc586f48afd9ed9138db46653e",
+    "re_export": "byte-identical; a conflicting re-export into the same directory was refused",
+    "status": "generated locally; not yet published to Kafka or loaded into either sink"
+  }
+}

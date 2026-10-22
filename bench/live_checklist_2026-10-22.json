@@ -1,0 +1,124 @@
+{
+  "what": "P03 live-run checklist steps 1-8 on the full local stack",
+  "date": "2026-10-22",
+  "environment": {
+    "host": "Apple M3 Pro, 18 GiB, macOS 15.3.1",
+    "docker_memory_bytes": 12528242688,
+    "free_disk_before": "30 GiB",
+    "services": "make up-core (3 Kafka 3.9.1 brokers, Apicurio 3.3.3, MinIO, metastore PostgreSQL, Spark 3.5.7 master and worker) plus Trino 483 and ClickHouse 25.8; named volumes reused"
+  },
+  "fixture_regeneration": {
+    "command": "gamestream-fixture --version parity-v1 --seed 20261020 --count 1000 --start 2026-02-01T00:00:00Z",
+    "manifest_byte_identical": true,
+    "deliveries": 1020,
+    "unique_event_ids": 1000
+  },
+  "preflight": {
+    "status": "clear",
+    "event_id_prefix": "e-20261020-"
+  },
+  "bronze_checkpoint_recovery": {
+    "problem": "The saved bronze checkpoint pointed at Kafka offsets (for example 361 and 311) that the 24-hour topic retention had deleted; failOnDataLoss=true stopped the job with OffsetOutOfRangeException.",
+    "kafka_state": "Every partition's earliest offset equalled its latest (topic empty); total offsets 3,162 = 2,142 deliveries bronze had read + 1,020 published on 19 October for the ClickHouse-only stage, which therefore never reached bronze.",
+    "action": "Started bronze with GAMESTREAM_BRONZE_CHECKPOINT=s3a://warehouse/checkpoints/bronze-2026-10-22 (startingOffsets earliest on an empty topic, so nothing old was re-read). The old checkpoint was left in place. No code changed."
+  },
+  "load": {
+    "published": 1020,
+    "publish_seconds": 1.034,
+    "clickhouse_ids_after_s": 10,
+    "trino_silver_ids_after_s": 30,
+    "clickhouse_ids": 1000,
+    "trino_silver_ids": 1000,
+    "clickhouse_consumer_lag": 0
+  },
+  "benchmark": {
+    "file": "bench/query_bench_parity-v1_2026-10-22.json",
+    "status": "passed",
+    "parity": {
+      "event_ids": 1000,
+      "sha256": "e53ae7eb1e4fef0b41b34a0c32802e0a68166acc586f48afd9ed9138db46653e",
+      "matches_manifest": true
+    },
+    "per_query_p50_ms": {
+      "row_count": {
+        "trino": 96.266,
+        "clickhouse": 4.463
+      },
+      "purchase_count": {
+        "trino": 66.599,
+        "clickhouse": 3.105
+      },
+      "active_users": {
+        "trino": 68.521,
+        "clickhouse": 2.816
+      },
+      "revenue": {
+        "trino": 56.625,
+        "clickhouse": 2.947
+      },
+      "top_game": {
+        "trino": 82.626,
+        "clickhouse": 3.554
+      }
+    },
+    "note": "5 timed runs after 1 warm-up per engine and query; the script's p95 with 5 samples is the 4th-smallest value. Trino times include a new DB-API connection per query; ClickHouse uses one HTTP POST per query."
+  },
+  "restart_test": {
+    "fixture": "restart-v1, seed 20261022, 200 unique IDs, 204 deliveries, start 2026-02-03",
+    "silver_before": {
+      "rows": 2100,
+      "distinct": 2100
+    },
+    "with_hook": "GAMESTREAM_SILVER_FAIL_AFTER_MERGE=1: InjectedRestartFailure after the MERGE for batch 9 (37 input rows); silver 2,137 rows, 2,137 distinct",
+    "after_restart": "batch 9 replayed (37 input rows, no new rows), batch 10 added 167; restart prefix 200 rows / 200 distinct; silver 2,300 rows / 2,300 distinct",
+    "checkpoint_and_shuffle": "silver checkpoint location and the 200 shuffle partitions unchanged"
+  },
+  "limits": [
+    "One local run over synthetic fixtures; not a general Trino-versus-ClickHouse speed claim.",
+    "Bronze now uses a new checkpoint path; the 19 October ClickHouse-stage deliveries are not in bronze.",
+    "Dashboards show synthetic fixture data; they demonstrate the wiring and export, not product insight."
+  ],
+  "airflow": {
+    "image": "apache/airflow:2.10.5-python3.12 with dbt-trino 1.9.3 (compose/airflow/Dockerfile)",
+    "dag": "gamestream_daily_marts",
+    "first_runs": "manual_2026-10-22_live and the scheduled 2026-10-20 run: silver_quality_gate succeeded, dbt_build failed after 3 attempts with 'Read-only file system: /opt/gamestream/dbt/logs/dbt.log' (the dbt project is mounted read-only)",
+    "fix": "daily_marts.py now passes --log-path /tmp/dbt-logs --target-path /tmp/dbt-target",
+    "fixed_run": "manual_2026-10-22_fixed: success; quality gate Metrics(rows=2300, missing_ids=0, duplicate_ids=0, invalid_types=0, future_events=0); dbt build PASS=31 WARN=0 ERROR=0 (7 table models, 1 view, 23 tests) in 4.32 s",
+    "after": "DAG paused again"
+  },
+  "superset": {
+    "image": "apache/superset:4.1.2 with sqlalchemy-trino and clickhouse-connect",
+    "script": "scripts/superset_dashboards.py",
+    "dashboards": {
+      "GameStream live operations (ClickHouse)": {
+        "id": 1,
+        "charts": 3
+      },
+      "GameStream product analytics (Trino)": {
+        "id": 2,
+        "charts": 4
+      }
+    },
+    "chart_rows": {
+      "Events per minute": 1446,
+      "Active users per minute": 1446,
+      "Purchase rate per minute": 1446,
+      "Purchase funnel by day": 3,
+      "D1 and D7 retention": 2,
+      "Game leaderboard by purchases": 20,
+      "DAU, WAU and MAU": 3
+    },
+    "export": {
+      "file": "superset/exports/gamestream_dashboards_2026-10-22.zip",
+      "bytes": 26542,
+      "passwords": "masked by Superset (XXXXXXXXXX)"
+    },
+    "browser_check": "headless Chrome 155: live operations 3/3 charts rendered, product analytics 4/4, 0 error alerts; screenshots superset/exports/*_2026-10-22.png",
+    "data_note": "The data covers three synthetic days (2026-01-01, 2026-02-01, 2026-02-03), so line charts join across the gap; D1/D7 retention is 0 because the fixtures have no returning users. Charts were not filtered to those dates."
+  },
+  "stop": {
+    "command": "make down (no -v), Docker Desktop stopped",
+    "named_volumes_kept": 10,
+    "free_disk_after": "18 GiB"
+  }
+}

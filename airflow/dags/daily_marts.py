@@ -22,6 +22,10 @@ with DAG(
     )
     build = BashOperator(
         task_id="dbt_build",
-        bash_command="cd /opt/gamestream/dbt && dbt build --profiles-dir . --target local",
+        # The dbt project is mounted read-only; logs and compiled files go to /tmp.
+        bash_command=(
+            "cd /opt/gamestream/dbt && dbt build --profiles-dir . --target local"
+            " --log-path /tmp/dbt-logs --target-path /tmp/dbt-target"
+        ),
     )
     quality >> build

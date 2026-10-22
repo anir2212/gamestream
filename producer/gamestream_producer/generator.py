@@ -13,6 +13,8 @@ EVENT_WEIGHTS = (9, 29, 9, 8, 4, 18, 18, 5)
 DEVICES = ("desktop", "mobile", "tablet")
 GENRES = ("action", "strategy", "simulation", "rpg", "puzzle", "sports")
 HOUR_WEIGHTS = (1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 7, 8, 9, 10, 12, 14, 16, 17, 14, 10, 6, 3)
+# Bump when a change alters the rows produced for the same inputs; fixture manifests record it.
+GENERATOR_VERSION = "1"
 
 
 def generate_events(

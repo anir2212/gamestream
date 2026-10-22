@@ -10,3 +10,5 @@ data/generated/
 dbt/target/
 dbt/logs/
 dbt/.user.yml
+# Regenerate with gamestream-fixture; only the small manifest is tracked.
+data/fixtures/*/events.jsonl
