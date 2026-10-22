@@ -1,0 +1,171 @@
+{
+  "status": "passed",
+  "observed_at_utc": "2026-10-21T19:48:51.176940+00:00",
+  "fixture": {
+    "fixture_version": "parity-v1",
+    "event_id_prefix": "e-20261020-",
+    "unique_event_ids": 1000,
+    "event_ids_sha256": "e53ae7eb1e4fef0b41b34a0c32802e0a68166acc586f48afd9ed9138db46653e",
+    "seed": 20261020
+  },
+  "environment": {
+    "platform": "macOS-15.3.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "python": "3.12.13",
+    "logical_cpus": 11,
+    "host_free_bytes": 19444551680,
+    "docker_memory_bytes": 12528242688
+  },
+  "method": {
+    "scope": "event_id LIKE 'e-20261020-%'",
+    "warmup_runs_per_engine_query": 1,
+    "timed_runs_per_engine_query": 5,
+    "trino_client": "Python DB-API, new connection per query",
+    "clickhouse_client": "HTTP POST per query",
+    "p95_rule": "sorted samples at index int(0.95 * (n - 1))"
+  },
+  "parity": {
+    "event_ids": 1000,
+    "sha256": "e53ae7eb1e4fef0b41b34a0c32802e0a68166acc586f48afd9ed9138db46653e",
+    "matches_manifest": true
+  },
+  "queries": {
+    "row_count": {
+      "answer": [
+        "1000"
+      ],
+      "trino": {
+        "samples_ms": [
+          101.85,
+          68.992,
+          80.829,
+          96.266,
+          125.122
+        ],
+        "p50_ms": 96.266,
+        "p95_ms": 101.85
+      },
+      "clickhouse": {
+        "samples_ms": [
+          4.287,
+          4.463,
+          5.191,
+          4.676,
+          3.514
+        ],
+        "p50_ms": 4.463,
+        "p95_ms": 4.676
+      }
+    },
+    "purchase_count": {
+      "answer": [
+        "44"
+      ],
+      "trino": {
+        "samples_ms": [
+          66.272,
+          61.505,
+          88.252,
+          72.876,
+          66.599
+        ],
+        "p50_ms": 66.599,
+        "p95_ms": 72.876
+      },
+      "clickhouse": {
+        "samples_ms": [
+          5.585,
+          2.863,
+          3.105,
+          5.167,
+          3.032
+        ],
+        "p50_ms": 3.105,
+        "p95_ms": 5.167
+      }
+    },
+    "active_users": {
+      "answer": [
+        "198"
+      ],
+      "trino": {
+        "samples_ms": [
+          69.552,
+          68.521,
+          67.914,
+          87.632,
+          65.716
+        ],
+        "p50_ms": 68.521,
+        "p95_ms": 69.552
+      },
+      "clickhouse": {
+        "samples_ms": [
+          2.599,
+          3.544,
+          2.816,
+          2.477,
+          4.332
+        ],
+        "p50_ms": 2.816,
+        "p95_ms": 3.544
+      }
+    },
+    "revenue": {
+      "answer": [
+        "68956"
+      ],
+      "trino": {
+        "samples_ms": [
+          56.625,
+          63.036,
+          56.273,
+          58.894,
+          54.294
+        ],
+        "p50_ms": 56.625,
+        "p95_ms": 58.894
+      },
+      "clickhouse": {
+        "samples_ms": [
+          2.756,
+          69.188,
+          4.204,
+          2.947,
+          2.75
+        ],
+        "p50_ms": 2.947,
+        "p95_ms": 4.204
+      }
+    },
+    "top_game": {
+      "answer": [
+        "g-00011",
+        "40"
+      ],
+      "trino": {
+        "samples_ms": [
+          106.808,
+          82.626,
+          111.726,
+          63.084,
+          69.974
+        ],
+        "p50_ms": 82.626,
+        "p95_ms": 106.808
+      },
+      "clickhouse": {
+        "samples_ms": [
+          4.389,
+          4.337,
+          3.554,
+          2.83,
+          2.829
+        ],
+        "p50_ms": 3.554,
+        "p95_ms": 4.337
+      }
+    }
+  },
+  "scope_note": "One local run over one synthetic fixture; not a general speed claim."
+}

@@ -1,6 +1,6 @@
 # Superset dashboard specification
 
-This is the intended local dashboard layout. The Superset image includes Trino and ClickHouse SQLAlchemy drivers. The actual dashboards have not yet been created/exported because the full stack cannot run within the current disk and Docker memory limit. Do not show mock screenshots as a running dashboard.
+This is the local dashboard layout. The Superset image includes Trino and ClickHouse SQLAlchemy drivers. On 22 October both dashboards were created from this specification by `scripts/superset_dashboards.py` against a live Superset 4.1.2. The script also exported them to `exports/gamestream_dashboards_2026-10-22.zip`; the two PNG files beside it are headless-Chrome screenshots. Recreate them with `uv run python scripts/superset_dashboards.py --out superset/exports/<name>.zip` while the stack is running. The script reuses existing objects and refuses to export if any chart query fails or returns no rows. To restore the saved version instead, import the ZIP in Superset (Dashboards → Import) and re-enter the database passwords, which the export masks.
 
 Connect the two databases after first local startup:
 
@@ -22,4 +22,4 @@ The minute state table is grouped by `(minute, game_id)`. Merge the aggregate st
 3. **Game leaderboard:** `SELECT game_id, sum(purchases) AS purchases FROM lake.gold.game_popularity GROUP BY 1 ORDER BY 2 DESC LIMIT 20`.
 4. **DAU/WAU/MAU:** `SELECT * FROM lake.gold.active_users ORDER BY day`.
 
-Filter all charts to the synthetic event dates (the generator defaults to January 2026), then export the native dashboard ZIP from a live Superset instance and commit it. Until then the acceptance criterion for exported dashboards and screenshots is open.
+The data behind the saved export covers three synthetic days (1 January, 1 February and 3 February 2026). Charts are not yet filtered to those dates, so the line charts draw straight across the empty weeks, and D1/D7 retention is 0 because no fixture user returns the next day. Adding a date filter is a presentation change still open.

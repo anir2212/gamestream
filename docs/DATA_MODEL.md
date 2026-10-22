@@ -15,7 +15,7 @@ Every generated action has a stable `event_id`, `user_id`, `game_id`, `event_typ
 | Gold | Date/game/cohort aggregates | dbt tables in Iceberg via Trino | Reproducible product analytics, rebuilt from silver. |
 | Live | Decoded event rows; eventually replaced by `event_id` | ClickHouse `ReplacingMergeTree` by event month | Low-latency reads and materialized minute aggregate states. |
 
-Bronze uses `kafka_ts` as its partition transform because raw Avro has not been decoded yet. Silver uses `event_ts`, which supports date-filtered analytical queries but produces small files under frequent microbatches. The maintenance DAG rewrites files and expires snapshots. Never remove recent snapshots before a recovery window is agreed.
+Bronze uses `kafka_ts` as its partition transform because raw Avro has not been decoded yet. Silver uses `event_ts`, which supports date-filtered analytical queries but produces small files under frequent microbatches. The authored maintenance DAG is intended to rewrite files and expire snapshots; it has not been exercised in the full stack. Never remove recent snapshots before a recovery window is agreed.
 
 ## Gold model grain and formulas
 

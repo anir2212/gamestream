@@ -12,6 +12,7 @@ analytics = ["dbt-trino==1.9.3", "trino>=0.334,<1"]
 
 [project.scripts]
 gamestream-produce = "gamestream_producer.cli:main"
+gamestream-fixture = "gamestream_producer.fixture:main"
 
 [build-system]
 requires = ["hatchling>=1.25,<2"]
