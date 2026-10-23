@@ -1,5 +1,27 @@
 # GameStream measured results
 
+## 2026-10-23 dashboard date filters
+
+Only the services the dashboards read were started: MinIO, the metastore PostgreSQL that holds the Iceberg JDBC catalog, Trino 483, ClickHouse 25.8 and Superset 4.1.2, on the named volumes kept from 22 October. Kafka, Spark, Airflow and dbt did not run, and no data changed. Compact record: [`bench/dashboard_filters_2026-10-23.json`](bench/dashboard_filters_2026-10-23.json).
+
+- **Data dates.** ClickHouse's minute table has data in 623 minutes on 1 January, 646 on 1 February and 177 on 3 February 2026. The Trino gold marts have the same three days (retention has two cohorts, 1 January and 1 February).
+- **What changed.** `scripts/superset_dashboards.py` now gives each dashboard a native **Event date** time-range filter scoped to all its charts, with the default `2026-01-01T00:00:00 : 2026-02-04T00:00:00` (Superset's end is exclusive). Every chart has a `TEMPORAL_RANGE` filter on its date column for the dashboard filter to replace. Line charts are resampled to their grain (`1T` or `1D`) with null filling, so empty periods break the line instead of being joined, and point markers show isolated periods. The leaderboard dataset now keeps `day`, so the filter applies before the per-game sum. Existing charts, datasets and dashboards are updated in place: after repeated runs Superset still held 7 charts, 7 datasets, 2 dashboards and 2 databases.
+- **Command.** `uv run python scripts/superset_dashboards.py --compare-range '2026-02-01T00:00:00 : 2026-02-02T00:00:00' --out superset/exports/gamestream_dashboards_2026-10-23.zip`. Every chart query returned data at the default range. Rows with a value under the default range against 1 February only:
+
+  | Chart | Default range | 1 February only |
+  |---|---:|---:|
+  | Events / active users / purchase rate per minute (each) | 1,446 minutes | 646 minutes |
+  | Purchase funnel by day | 3 days | 1 day (157 viewers, 30 wishlisters, 1 purchaser) |
+  | D1 and D7 retention | 2 cohorts | 1 cohort |
+  | Game leaderboard by purchases | 20 games | 20 games, different order and counts |
+  | DAU, WAU and MAU | 3 days | 1 day (DAU 198) |
+
+  After resampling, the minute charts return 48,939 rows over the default range (1,425 for 1 February) and DAU/WAU/MAU returns 34 rows, of which 3 hold data. The rest are the nulls that leave the gaps blank. Checked directly in Trino, the leaderboard's source holds 87 purchases over all days and 44 on 1 February. Its top game, g-00039, leads in both ranges because all 5 of its purchases are on 1 February; the rest of the list changes.
+- **Real UI check.** `scripts/superset_browser_check.mjs` logged in through Superset's login page in headless Chrome 156, opened each dashboard, and recorded every chart-data request the page made. At the default, all 7 requests carried the default range and returned the counts above; 3/3 and 4/4 charts drew, with no error alerts. With the 1 February range in the dashboard URL (Superset's encoding of a changed filter), all 7 requests carried that range and returned 1,425 resampled minute rows, 1 funnel row, 1 cohort, 20 games and 1 DAU row. Screenshots: [live operations](superset/exports/live_operations_2026-10-23.png), [live operations, 1 February](superset/exports/live_operations_feb01_2026-10-23.png), [product analytics](superset/exports/product_analytics_2026-10-23.png), [product analytics, 1 February](superset/exports/product_analytics_feb01_2026-10-23.png).
+- **Export.** [`superset/exports/gamestream_dashboards_2026-10-23.zip`](superset/exports/gamestream_dashboards_2026-10-23.zip) (32,741 bytes, 19 files) includes the filter configuration. Superset masked the ClickHouse password (`XXXXXXXXXX`), and the archive has no plain password.
+- **Checks.** `uv run --extra test --extra spark pytest -q` passed 57 tests (5 new for the filter, resampling, leaderboard and summary logic), and Ruff passed. Stopped with `make down` (no `-v`; 10 named volumes kept). The images pulled for this run were removed afterwards.
+- **Limits.** The data is three synthetic days, so this shows the filter wiring, not product insight. The default range is fixed to the fixtures' dates rather than read from the data. Over the full range each minute chart is a thin band per day, so the minutes are read by narrowing the filter. The filtered view was opened through the URL rather than by clicking the date picker. The ZIP was not re-imported into a fresh Superset. Retention remains 0 because no fixture user returns.
+
 ## 2026-10-22 full local stack: parity benchmark, restart test, Airflow and Superset
 
 All services ran on the M3 Pro (18 GiB; Docker 11.67 GiB) with the named volumes from earlier runs. Compact record: [`bench/live_checklist_2026-10-22.json`](bench/live_checklist_2026-10-22.json).
@@ -23,7 +45,7 @@ All services ran on the M3 Pro (18 GiB; Docker 11.67 GiB) with the named volumes
   - ClickHouse live operations: 3 line charts, 1,446 minutes each.
   - Trino product analytics: funnel (3 days), retention (2 cohorts), leaderboard (20 games) and DAU/WAU/MAU (3 days).
 
-  It checked that every chart query returned rows, then exported [the dashboard ZIP](superset/exports/gamestream_dashboards_2026-10-22.zip), with Superset masking the passwords. Headless Chrome 155 rendered 3/3 and 4/4 charts with no error alerts ([live operations](superset/exports/live_operations_2026-10-22.png), [product analytics](superset/exports/product_analytics_2026-10-22.png)). The data covers three synthetic days, so the line charts join across the gap, and retention is 0 because no fixture user returns.
+  It checked that every chart query returned rows, then exported [the dashboard ZIP](superset/exports/gamestream_dashboards_2026-10-22.zip), with Superset masking the passwords. Headless Chrome 155 rendered 3/3 and 4/4 charts with no error alerts ([live operations](superset/exports/live_operations_2026-10-22.png), [product analytics](superset/exports/product_analytics_2026-10-22.png)). The data covers three synthetic days, so at this point the line charts joined across the gap (fixed on 23 October; see above), and retention is 0 because no fixture user returns.
 - **Stopped** with `make down` (no `-v`; 10 named volumes kept) and Docker Desktop stopped. Tests: 52 passed (3 new for the dashboard builder), and Ruff passed.
 
 ## 2026-10-20 parity fixture and benchmark gate (local tooling only)
@@ -65,7 +87,7 @@ This is one staged run on saved synthetic data. Host free disk reached about **9
 
 The manual backfill now treats its limit as **31 inclusive event dates**. A fake-Spark regression test verifies that the operator scans all bronze arrival dates before filtering decoded `event_ts`, so a very late event is not excluded solely because its Kafka arrival date is after the requested range. It also verifies that Spark stops after a merge failure. At this earlier checkpoint, no live backfill had run; the later manual Iceberg result is above. Scanning all bronze partitions can be expensive at larger scale; a safe arrival-date cutoff would require a proven maximum lateness policy.
 
-`bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record Kafka and Spark checks; the later Trino/dbt result is above. ClickHouse and the complete dashboard stack remain open.
+`bench/generator_bench.py` records in-memory synthetic generation only. It does not measure Kafka delivery, Spark ingestion, Trino queries, ClickHouse queries, or fault tolerance. Separate staged sections below record Kafka and Spark checks; the later Trino/dbt result is above. ClickHouse and the complete dashboard stack were still open at that point; both ran on 22 October.
 
 | Machine | Unique events | Rows including intentional duplicates | Wall time | Rows/s |
 |---|---:|---:|---:|---:|
@@ -117,8 +139,8 @@ The compact record is [`bench/lakehouse_stage_results.json`](bench/lakehouse_sta
 
 ## Model and quality checks
 
-`dbt parse --profiles-dir . --no-partial-parse` registered the Trino adapter and found eight models, 23 data tests, and one source after adding accepted-value, composite-grain, and count-order checks on 2026-10-15. Parsing had no model errors. At that checkpoint, `dbt compile` could not connect because Trino was not running. The pure quality gate passed six local tests, including five deliberately invalid metric variants. The later live dbt build and DQ query are recorded above; the Airflow DAG run and dashboard remain unverified.
+`dbt parse --profiles-dir . --no-partial-parse` registered the Trino adapter and found eight models, 23 data tests, and one source after adding accepted-value, composite-grain, and count-order checks on 2026-10-15. Parsing had no model errors. At that checkpoint, `dbt compile` could not connect because Trino was not running. The pure quality gate passed six local tests, including five deliberately invalid metric variants. The later live dbt build and DQ query are recorded above. The Airflow DAG run and the dashboards were verified on 22 October, and the dashboard date filter on 23 October (both above).
 
 ## Resource boundary
 
-At initial implementation the host had about 3.9 GiB free disk and Docker was configured with 8.32 billion bytes (about 7.75 GiB) of memory. On 2026-10-15, `df -h` showed about 45 GiB free on the host. After the user changed Docker Desktop settings, `docker info` reported 12,528,242,688 bytes (about 11.67 GiB) available to the VM. On 2026-10-16, the first staged Docker run consumed roughly 17–18 GiB of host free space, including image pulls, build cache, and volumes. The later JDBC/stream stage ran with about 20 GiB free at the start, 10 GiB at its low point, and 15 GiB after shutdown. The 2026-10-18 Trino/dbt stage reached about 9.3 GiB free and therefore did not expand the stack further. The `Docker.raw` sparse file reported a 460 GiB logical size, so host free space was the practical limit. Query latency, Iceberg compaction, time travel, dashboard refresh, and silver post-commit stream restart are **unmeasured**.
+At initial implementation the host had about 3.9 GiB free disk and Docker was configured with 8.32 billion bytes (about 7.75 GiB) of memory. On 2026-10-15, `df -h` showed about 45 GiB free on the host. After the user changed Docker Desktop settings, `docker info` reported 12,528,242,688 bytes (about 11.67 GiB) available to the VM. On 2026-10-16, the first staged Docker run consumed roughly 17–18 GiB of host free space, including image pulls, build cache, and volumes. The later JDBC/stream stage ran with about 20 GiB free at the start, 10 GiB at its low point, and 15 GiB after shutdown. The 2026-10-18 Trino/dbt stage reached about 9.3 GiB free and therefore did not expand the stack further. The `Docker.raw` sparse file reported a 460 GiB logical size, so host free space was the practical limit. Iceberg compaction, time travel and dashboard refresh timing are **unmeasured**. Query latency (the parity-gated benchmark) and the silver post-commit restart (the replay added 0 rows; 200 of 200 IDs) were measured on 22 October; see above.

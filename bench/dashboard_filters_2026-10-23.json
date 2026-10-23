@@ -1,0 +1,488 @@
+{
+  "what": "P03 Superset dashboard date filters: native time-range filter per dashboard and line charts that leave empty periods blank",
+  "date": "2026-10-23",
+  "environment": {
+    "host": "Apple M3 Pro, 18 GiB, macOS 15.3.1",
+    "docker_memory_bytes": 12528242688,
+    "services": "Only MinIO, metastore PostgreSQL (Iceberg JDBC catalog), Trino 483, ClickHouse 25.8 and Superset 4.1.2 on the named volumes kept from 22 October; no Kafka, Spark, Airflow or dbt run",
+    "browser": "Google Chrome 156.0.8078.47, headless, driven over the DevTools protocol by scripts/superset_browser_check.mjs (Node 26)",
+    "free_disk": {
+      "before_pulls": "22 GiB",
+      "lowest_seen": "8.1 GiB (after the run, before images were removed; another session was also using the machine)",
+      "after_cleanup": "11 GiB"
+    }
+  },
+  "data_dates": {
+    "clickhouse_minutes_with_data": {
+      "2026-01-01": 623,
+      "2026-02-01": 646,
+      "2026-02-03": 177
+    },
+    "trino_gold_days": [
+      "2026-01-01",
+      "2026-02-01",
+      "2026-02-03"
+    ],
+    "retention_cohorts": [
+      "2026-01-01",
+      "2026-02-01"
+    ]
+  },
+  "builder": {
+    "command": "uv run python scripts/superset_dashboards.py --compare-range '2026-02-01T00:00:00 : 2026-02-02T00:00:00' --out superset/exports/gamestream_dashboards_2026-10-23.zip",
+    "default_time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+    "compare_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+    "dashboards": {
+      "GameStream live operations (ClickHouse)": {
+        "id": 1,
+        "charts": 3,
+        "date_filter": "NATIVE_FILTER-gamestream-date-1"
+      },
+      "GameStream product analytics (Trino)": {
+        "id": 2,
+        "charts": 4,
+        "date_filter": "NATIVE_FILTER-gamestream-date-2"
+      }
+    },
+    "objects_after_repeated_runs": {
+      "charts": 7,
+      "datasets": 7,
+      "dashboards": 2,
+      "databases": 2
+    },
+    "dataset_changed": "gs_game_leaderboard_by_purchases now selects day, game_id, purchases (the per-game sum moved into the chart) so the date filter applies before summing; Superset detected day as a DATE temporal column",
+    "note": "rows counts resampled rows, including empty periods that resampling adds as nulls; rows_with_value counts periods that hold data"
+  },
+  "charts": {
+    "Events per minute": {
+      "id": 1,
+      "viz_type": "echarts_timeseries_line",
+      "default_range": {
+        "rows": 48939,
+        "rows_with_value": 1446,
+        "first_rows": [
+          {
+            "minute": "2026-01-01 00:02",
+            "events": 1.0
+          },
+          {
+            "minute": "2026-01-01 00:12",
+            "events": 1.0
+          },
+          {
+            "minute": "2026-01-01 00:51",
+            "events": 1.0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1425,
+        "rows_with_value": 646,
+        "first_rows": [
+          {
+            "minute": "2026-02-01 00:07",
+            "events": 1.0
+          },
+          {
+            "minute": "2026-02-01 00:31",
+            "events": 2.0
+          },
+          {
+            "minute": "2026-02-01 00:39",
+            "events": 1.0
+          }
+        ]
+      }
+    },
+    "Active users per minute": {
+      "id": 2,
+      "viz_type": "echarts_timeseries_line",
+      "default_range": {
+        "rows": 48939,
+        "rows_with_value": 1446,
+        "first_rows": [
+          {
+            "minute": "2026-01-01 00:02",
+            "users": 1.0
+          },
+          {
+            "minute": "2026-01-01 00:12",
+            "users": 1.0
+          },
+          {
+            "minute": "2026-01-01 00:51",
+            "users": 1.0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1425,
+        "rows_with_value": 646,
+        "first_rows": [
+          {
+            "minute": "2026-02-01 00:07",
+            "users": 1.0
+          },
+          {
+            "minute": "2026-02-01 00:31",
+            "users": 2.0
+          },
+          {
+            "minute": "2026-02-01 00:39",
+            "users": 1.0
+          }
+        ]
+      }
+    },
+    "Purchase rate per minute": {
+      "id": 3,
+      "viz_type": "echarts_timeseries_line",
+      "default_range": {
+        "rows": 48939,
+        "rows_with_value": 1446,
+        "first_rows": [
+          {
+            "minute": "2026-01-01 00:02",
+            "rate": 0.0
+          },
+          {
+            "minute": "2026-01-01 00:12",
+            "rate": 0.0
+          },
+          {
+            "minute": "2026-01-01 00:51",
+            "rate": 0.0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1425,
+        "rows_with_value": 646,
+        "first_rows": [
+          {
+            "minute": "2026-02-01 00:07",
+            "rate": 0.0
+          },
+          {
+            "minute": "2026-02-01 00:31",
+            "rate": 0.0
+          },
+          {
+            "minute": "2026-02-01 00:39",
+            "rate": 0.0
+          }
+        ]
+      }
+    },
+    "Purchase funnel by day": {
+      "id": 4,
+      "viz_type": "table",
+      "default_range": {
+        "rows": 3,
+        "rows_with_value": 3,
+        "first_rows": [
+          {
+            "day": "2026-01-01 00:00",
+            "viewers": 151,
+            "wishlisters": 37,
+            "purchasers": 1
+          },
+          {
+            "day": "2026-02-01 00:00",
+            "viewers": 157,
+            "wishlisters": 30,
+            "purchasers": 1
+          },
+          {
+            "day": "2026-02-03 00:00",
+            "viewers": 40,
+            "wishlisters": 1,
+            "purchasers": 0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1,
+        "rows_with_value": 1,
+        "first_rows": [
+          {
+            "day": "2026-02-01 00:00",
+            "viewers": 157,
+            "wishlisters": 30,
+            "purchasers": 1
+          }
+        ]
+      }
+    },
+    "D1 and D7 retention": {
+      "id": 5,
+      "viz_type": "table",
+      "default_range": {
+        "rows": 2,
+        "rows_with_value": 2,
+        "first_rows": [
+          {
+            "cohort_date": "2026-01-01 00:00",
+            "d1_rate": 0.0,
+            "d7_rate": 0.0
+          },
+          {
+            "cohort_date": "2026-02-01 00:00",
+            "d1_rate": 0.0,
+            "d7_rate": 0.0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1,
+        "rows_with_value": 1,
+        "first_rows": [
+          {
+            "cohort_date": "2026-02-01 00:00",
+            "d1_rate": 0.0,
+            "d7_rate": 0.0
+          }
+        ]
+      }
+    },
+    "Game leaderboard by purchases": {
+      "id": 6,
+      "viz_type": "table",
+      "default_range": {
+        "rows": 20,
+        "rows_with_value": 20,
+        "first_rows": [
+          {
+            "game_id": "g-00039",
+            "purchases": 5
+          },
+          {
+            "game_id": "g-00017",
+            "purchases": 5
+          },
+          {
+            "game_id": "g-00022",
+            "purchases": 4
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 20,
+        "rows_with_value": 20,
+        "first_rows": [
+          {
+            "game_id": "g-00039",
+            "purchases": 5
+          },
+          {
+            "game_id": "g-00001",
+            "purchases": 3
+          },
+          {
+            "game_id": "g-00022",
+            "purchases": 3
+          }
+        ]
+      },
+      "trino_cross_check": "Directly in Trino, lake.gold.game_popularity holds 87 purchases over all days and 44 on 2026-02-01; g-00039's 5 purchases are all on 2026-02-01, which is why it leads in both ranges while the rest of the list changes"
+    },
+    "DAU, WAU and MAU": {
+      "id": 7,
+      "viz_type": "echarts_timeseries_line",
+      "default_range": {
+        "rows": 34,
+        "rows_with_value": 3,
+        "first_rows": [
+          {
+            "day": "2026-01-01 00:00",
+            "dau": 199.0,
+            "mau": 199.0,
+            "wau": 199.0
+          },
+          {
+            "day": "2026-02-01 00:00",
+            "dau": 198.0,
+            "mau": 198.0,
+            "wau": 198.0
+          },
+          {
+            "day": "2026-02-03 00:00",
+            "dau": 124.0,
+            "mau": 200.0,
+            "wau": 200.0
+          }
+        ]
+      },
+      "feb_1_only": {
+        "rows": 1,
+        "rows_with_value": 1,
+        "first_rows": [
+          {
+            "day": "2026-02-01 00:00",
+            "dau": 198.0,
+            "mau": 198.0,
+            "wau": 198.0
+          }
+        ]
+      }
+    }
+  },
+  "ui_check": {
+    "live_operations_default": {
+      "dashboard_id": 1,
+      "url_time_range": null,
+      "charts": 3,
+      "rendered": 3,
+      "error_alerts": 0,
+      "chart_data": [
+        {
+          "slice_id": 1,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 48939,
+          "status": "success"
+        },
+        {
+          "slice_id": 2,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 48939,
+          "status": "success"
+        },
+        {
+          "slice_id": 3,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 48939,
+          "status": "success"
+        }
+      ],
+      "screenshot": "superset/exports/live_operations_2026-10-23.png"
+    },
+    "live_operations_feb_1": {
+      "dashboard_id": 1,
+      "url_time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+      "charts": 3,
+      "rendered": 3,
+      "error_alerts": 0,
+      "chart_data": [
+        {
+          "slice_id": 1,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1425,
+          "status": "success"
+        },
+        {
+          "slice_id": 2,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1425,
+          "status": "success"
+        },
+        {
+          "slice_id": 3,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1425,
+          "status": "success"
+        }
+      ],
+      "screenshot": "superset/exports/live_operations_feb01_2026-10-23.png"
+    },
+    "product_analytics_default": {
+      "dashboard_id": 2,
+      "url_time_range": null,
+      "charts": 4,
+      "rendered": 4,
+      "error_alerts": 0,
+      "chart_data": [
+        {
+          "slice_id": 4,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 3,
+          "status": "success"
+        },
+        {
+          "slice_id": 5,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 2,
+          "status": "success"
+        },
+        {
+          "slice_id": 6,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 20,
+          "status": "success"
+        },
+        {
+          "slice_id": 7,
+          "time_range": "2026-01-01T00:00:00 : 2026-02-04T00:00:00",
+          "rowcount": 34,
+          "status": "success"
+        }
+      ],
+      "screenshot": "superset/exports/product_analytics_2026-10-23.png"
+    },
+    "product_analytics_feb_1": {
+      "dashboard_id": 2,
+      "url_time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+      "charts": 4,
+      "rendered": 4,
+      "error_alerts": 0,
+      "chart_data": [
+        {
+          "slice_id": 4,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1,
+          "status": "success"
+        },
+        {
+          "slice_id": 5,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1,
+          "status": "success"
+        },
+        {
+          "slice_id": 6,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 20,
+          "status": "success"
+        },
+        {
+          "slice_id": 7,
+          "time_range": "2026-02-01T00:00:00 : 2026-02-02T00:00:00",
+          "rowcount": 1,
+          "status": "success"
+        }
+      ],
+      "screenshot": "superset/exports/product_analytics_feb01_2026-10-23.png"
+    }
+  },
+  "export": {
+    "file": "superset/exports/gamestream_dashboards_2026-10-23.zip",
+    "bytes": 32741,
+    "files": 19,
+    "passwords": "masked by Superset (clickhousedb://gamestream:XXXXXXXXXX@...); the export contains no plain password",
+    "date_filter_in_export": true
+  },
+  "checks": {
+    "pytest": "57 passed (uv run --extra test --extra spark pytest -q)",
+    "ruff": "passed",
+    "node_check": "node --check scripts/superset_browser_check.mjs passed"
+  },
+  "limits": [
+    "Synthetic fixture data over three days; the dashboards show the wiring and the filter behaviour, not product insight.",
+    "The default range is fixed to the fixtures' dates (--time-range changes it); it is not computed from the data.",
+    "At minute grain over the full range, each day is a narrow band; narrowing the filter is the way to read the minute charts.",
+    "The filtered view was opened by putting the filter value in the dashboard URL, the same encoding Superset uses for a changed filter; the date picker itself was not clicked.",
+    "The exported ZIP was not re-imported into a fresh Superset during this run.",
+    "D1/D7 retention stays 0 because no fixture user returns the next day or week."
+  ],
+  "stop": {
+    "command": "make down (no -v)",
+    "named_volumes_kept": 10,
+    "images_removed": [
+      "apache/superset:4.1.2",
+      "gamestream-full-superset",
+      "trinodb/trino:483",
+      "clickhouse/clickhouse-server:25.8",
+      "bitnamilegacy/minio:2025.7.23-debian-12-r5",
+      "postgres:16-alpine"
+    ]
+  }
+}
