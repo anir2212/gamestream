@@ -15,7 +15,7 @@ I built this as a fault-aware lab rather than a production service. The events a
 | M6–M7: orchestration and failure checks | Airflow ran `gamestream_daily_marts`: the quality gate passed on 2,300 rows, then dbt built 31/31 nodes. One three-broker fault experiment read back 200 acknowledged IDs. Broader recovery tests remain open. |
 | M8–M9: stretch | Flink and managed-platform ports are not verified. |
 
-Everything above is one local run on synthetic fixtures, not a production benchmark. Next: date filters on the dashboards (the export spans three synthetic days), a longer continuously running stream, and broader recovery tests.
+Everything above is one local run on synthetic fixtures, not a production benchmark. On 23 October both dashboards gained an event-date filter, and their line charts now leave empty periods blank instead of drawing straight across them. Next: a longer continuously running stream and broader recovery tests.
 
 ## What has run
 
@@ -30,6 +30,7 @@ Everything above is one local run on synthetic fixtures, not a production benchm
   - **Restart.** A silver crash injected right after a MERGE replayed without adding rows.
   - **Airflow.** The daily DAG ran the quality gate and the dbt build after one fix: dbt now writes its logs and target outside the read-only project mount.
   - **Superset.** `scripts/superset_dashboards.py` built both dashboards, checked every chart returned rows and exported them ([dashboards](superset/exports/), passwords masked by Superset).
+  - **Date filters, 23 October.** Each dashboard has a native event-date filter scoped to all its charts. Restricting it to 1 February cut each minute chart from 1,446 to 646 rows with data, and the purchase funnel, retention and DAU charts to that one day. Headless Chrome confirmed every chart request carried the chosen range ([evidence](bench/dashboard_filters_2026-10-23.json)).
   - **Stale checkpoint.** Bronze's old checkpoint pointed at offsets that Kafka's 24-hour retention had deleted, so it was restarted on a new checkpoint path.
 
   The run's record is [bench/live_checklist_2026-10-22.json](bench/live_checklist_2026-10-22.json).
